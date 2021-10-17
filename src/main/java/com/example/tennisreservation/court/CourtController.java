@@ -14,9 +14,16 @@ public class CourtController {
         this.repository = repository;
     }
 
-
+    /**
+     * Endpoint for getting all existing courts
+     *
+     *
+     * @return list of all courts
+     */
     @GetMapping("/courts")
     List<Court> all() {
         return repository.findAll();
     }
+
+
 }

@@ -18,41 +18,38 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Class for seeding database with some basic testing data
+ *
+ */
 @Configuration
 class LoadDatabase {
 
     private static final Logger log = LoggerFactory.getLogger(LoadDatabase.class);
 
         @Bean
-        CommandLineRunner initDatabase(CourtRepository repository, ReservationRepository repository2, CustomerRepository customerRepository) {
+        CommandLineRunner initDatabase(CourtRepository courtRepository, CustomerRepository customerRepository) {
+            var customer = new Customer("Vojtech Sykora", "778040119");
+            var customer2 = new Customer("Jan Novak", "746258751");
+            var court1 = new Court(1, Surface.ARTIFICIAL);
+            courtRepository.save(court1);
+            var court2 = new Court(2, Surface.ARTIFICIAL);
+            courtRepository.save(court2);
+            var court3 = new Court(3, Surface.CLAY);
+            courtRepository.save(court3);
+            var court4 = new Court(4, Surface.CLAY);
+            courtRepository.save(court4);
+            var court5 = new Court(5, Surface.GRASS);
+            courtRepository.save(court5);
 
-            var reservation = new Reservation();
-            var court = new Court(10, Surface.ARTIFICIAL, 5);
-            var customer = new Customer("Vojtech", "778040119");
+            var reservation1 = new Reservation(LocalDateTime.now(), 60, court1, GameType.DOUBLE, customer);
+            customer.addReservation(reservation1);
 
-
-            reservation.setCourt(court);
-            reservation.setMinutesDuration(60);
-            reservation.setGameType(GameType.SINGLE);
-            reservation.setStartTime(LocalDateTime.now());
-            reservation.setCustomer(customer);
-            List<Reservation> reservationList = new ArrayList<>();
-            reservationList.add(reservation);
-            customer.setReservation(reservationList);
-
-
-
-
-
+            customerRepository.save(customer);
+            customerRepository.save(customer2);
 
             return args -> {
-                log.info("Preloading " + repository.save(court));
-                log.info("Preloading " + customerRepository.save(customer));
-                log.info("Preloading " + repository.save(new Court(2, Surface.CLAY, 5)));
-                log.info("Preloading " + reservation);
-
-
+                log.info("Database seeded successfully");
             };
         }
     }

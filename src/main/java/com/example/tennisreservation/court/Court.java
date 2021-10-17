@@ -1,40 +1,27 @@
 package com.example.tennisreservation.court;
 
 import javax.persistence.*;
+import java.util.Objects;
 
+/**
+ * Class for representing single court. Court can be identified by id (for database purposes) and
+ * number (for reservation purposes).
+ *
+ */
 @Entity
 public class Court {
-
-    // private static HashMap<Surface, Double> RATES;
 
     @Id
     @GeneratedValue
     private long id;
     private Surface surface;
-    private double minuteRate;
+    @Column(unique = true)
     private int number;
-
-    public double getMinuteRate() {
-        return minuteRate;
-    }
-
-    public void setMinuteRate(double minuteRate) {
-        this.minuteRate = minuteRate;
-    }
-
-    public int getNumber() {
-        return number;
-    }
-
-    public void setNumber(int number) {
-        this.number = number;
-    }
 
     public Court() {};
 
-    public Court(int number, Surface surface, double minuteRate) {
+    public Court(int number, Surface surface) {
         this.surface = surface;
-        this.minuteRate = minuteRate;
         this.number = number;
     }
 
@@ -44,6 +31,14 @@ public class Court {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
     }
 
     public Surface getSurface() {
@@ -56,11 +51,19 @@ public class Court {
 
     @Override
     public String toString() {
-        return "Court {" +
-                "id=" + id +
-                ", surface=" + surface +
-                ", minuteRate=" + minuteRate +
-                ", number=" + number +
-                '}';
+        return "Court number " + number;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Court court = (Court) o;
+        return number == court.number && surface == court.surface;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, surface, number);
     }
 }

@@ -2,6 +2,10 @@ package com.example.tennisreservation.reservation;
 
 import java.time.LocalDateTime;
 
+/**
+ * Class representing data format for incoming POST requests to endpoint /reservation
+ *
+ */
 public class ReservationForm {
     private int courtNumber;
     private GameType type;

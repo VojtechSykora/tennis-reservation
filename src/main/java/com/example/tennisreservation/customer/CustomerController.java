@@ -18,6 +18,13 @@ public class CustomerController {
         this.repository = repository;
     }
 
+    /**
+     * Endpoint for getting information about specific customer and his reservations.
+     * Phone number is specified as a URL query parameter number.
+     *
+     * @param number customers phone number
+     * @return Customer object, with list of all his reservations
+     */
     @GetMapping("/customer")
     Customer getCourtReservations(@RequestParam String number) {
         return repository.findByPhoneNumber(number);

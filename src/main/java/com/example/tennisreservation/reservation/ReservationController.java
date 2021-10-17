@@ -22,32 +22,118 @@ public class ReservationController {
         this.customerRepository = customerRepository;
     }
 
-    @GetMapping("/court/{courtId}/reservations")
-    List<Reservation> getCourtReservations(@PathVariable int courtId) {
-        return reservationRepository.findByCourtNumber(courtId);
+    /**
+     * Endpoint for getting all reservations for court identified by URL path paramater
+     *
+     * @param courtNumber URL path variable
+     * @return list of reservations for specified court
+     */
+    @GetMapping("/courts/{courtNumber}/reservations")
+    List<Reservation> getCourtReservations(@PathVariable int courtNumber) {
+        return reservationRepository.findByCourtNumber(courtNumber);
     }
 
+    /**
+     * Endpoint for creating a new reservation.
+     *
+     *
+     * @param form
+     * @return On successfull creation - reservations price
+     *         if something went wrong - error message and null price
+     */
     @PostMapping("/reservation")
-    double createReservation(@RequestBody ReservationForm form) {
-        List<Reservation> reservations = reservationRepository.findByCourtNumber(form.getCourtNumber());
+    ReservationResult createReservation(@RequestBody ReservationForm form) {
+
         Court court = courtRepository.findByNumber(form.getCourtNumber());
-        Customer customer = customerRepository.findByPhoneNumber(form.getPhoneNumber());
-        List<Reservation> customerReservations = customer.getReservation();
-
-        Reservation newReservation = new Reservation(form.getStartTime(), form.getDuration(), court, form.getType());
-        newReservation.setCustomer(customer);
-        boolean overlaps = reservations.stream().anyMatch(reservation -> ReservationManager.reservationsOverlap(reservation, newReservation));
-
-        if (overlaps) {
-            return 0;
+        if (court == null) {
+            return new ReservationResult("Court number " + form.getCourtNumber() + " does not exist");
         }
 
-        customerReservations.add(newReservation);
-        customer.setReservation(customerReservations);
+        Customer customer = customerRepository.findByPhoneNumber(form.getPhoneNumber().replaceAll("\\s", ""));
+        if (customer == null) {
+            try {
+                customer = new Customer(form.getCustomerName(), form.getPhoneNumber());
+            } catch (IllegalArgumentException e) {
+                return new ReservationResult(e.getMessage());
+            }
 
+        }
+
+        Reservation newReservation;
+        try {
+            newReservation = new Reservation(form.getStartTime(), form.getDuration(), court, form.getType(), customer);
+        } catch (Exception e) {
+            return new ReservationResult(e.getMessage());
+        }
+
+        if (reservationOverlap(newReservation)) {
+            return new ReservationResult("Court " + court.getNumber() +
+                    " is already reserved.");
+        }
+
+        customer.addReservation(newReservation);
         customerRepository.save(customer);
 
-        return ReservationManager.getPrice(newReservation);
+        return new ReservationResult(newReservation.getPrice());
     }
+
+    /**
+     * Checks whether new reservation interferes with another existing one.
+     *
+     * @param newReservation reservation to be checked
+     * @return true - reservation interferes with another one (and should not be placed)
+     *         false - reservation does not overlap with another one (and can be placed)
+     */
+    private boolean reservationOverlap(Reservation newReservation) {
+        Reservation startsBefore = reservationRepository
+                .findFirstByCourtNumberAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+                        newReservation.getCourt().getNumber(),
+                        newReservation.getStartTime(),
+                        newReservation.getStartTime()
+                );
+
+        Reservation startsAfter = reservationRepository
+                .findFirstByCourtNumberAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+                        newReservation.getCourt().getNumber(),
+                        newReservation.getEndTime(),
+                        newReservation.getEndTime()
+                );
+
+        Reservation startsBetween = reservationRepository
+                .findFirstByCourtNumberAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(
+                        newReservation.getCourt().getNumber(),
+                        newReservation.getStartTime(),
+                        newReservation.getEndTime()
+                );
+
+        // other reservations are in progress in new reservation timespan
+        if (startsBetween != null) {
+            return true;
+        }
+
+        // new reservation is for the exact same time as another existing
+        if (startsAfter != null && startsBefore != null) {
+            return true;
+        }
+
+        // new reservation end time overlaps with existing reservation
+        if (startsAfter != null && ! startsAfter.getStartTime().equals(newReservation.getEndTime())) {
+            return true;
+        }
+
+        // new reservation start time overlaps with existing reservation
+        if (startsBefore != null && ! startsBefore.getEndTime().equals(newReservation.getStartTime())) {
+            return true;
+        }
+
+        return false;
+
+
+
+
+    }
+
+
+
 
 }
